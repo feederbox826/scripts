@@ -6,11 +6,11 @@ const fs = require('node:fs')
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
 
 const resultsFile = fs.readFileSync("ts-pumps/results.json")
-const results = new Map(Object.entries(JSON.parse(resultsFile)))
+const results = new Map(JSON.parse(resultsFile))
 
 const getTSUrl = (urls) =>
   urls.find(
-    url => url.url.includes("teamskeet.com")
+    url => (url.url.includes("teamskeet.com") && !url.url.includes("members.teamskeet.com"))
     || url.url.includes("mylf.com")
     || url.url.includes("swappz.com"))?.url
 
@@ -89,7 +89,7 @@ async function processScenes() {
       const tsURL = getTSUrl(scene.urls)
       // check if scene is in results
       if (results.has(scene.id)) {
-        console.log(`Scene ${scene.id} already in results`)
+        //console.log(`Scene ${scene.id} already in results`)
       } else if (!tsURL) {
         // if no URLs, add to results as false
         results.set(scene.id, false)
@@ -110,8 +110,15 @@ async function processScenes() {
     page++
     data = await sdbFetch(page)
     scenes = data.queryScenes.scenes
-    fs.writeFileSync("ts-pumps/results.json", JSON.stringify([...results]))
+    fs.writeFileSync("ts-pumps/results.json", JSON.stringify([...results], null, 2))
   }
 }
 
-processScenes()
+async function parseResults() {
+  const results = fs.readFileSync("ts-pumps/results.json")
+  const trueResults = JSON.parse(results).filter(([_, value]) => value === true)
+  console.log(`${trueResults.length} teamskeet matches found`)
+}
+
+//processScenes()
+parseResults()
