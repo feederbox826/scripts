@@ -1,59 +1,43 @@
-import * as cheerio from "cheerio";
-import axios from "axios";
-import download from "download";
-import fs from "fs";
-import sanitize from "sanitize-filename";
+// usage:
+// node porngals4.mjs --name riley reid
 
-// config
-let name = "alina lopez";
-const pages = 9;
+import { getHref, loadPage, downloadURL, existingFolderCheck } from "./utils.mjs";
+import minimist from 'minimist';
 
-const fakeClient = axios.create({
-  baseURL: "https://www.porngals4.com",
-  headers: {
-    "User-Agent":
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-  },
-});
+const argv = minimist(process.argv.slice(2));
+let name = argv.name;
 
 async function crawlPornstar(name, num) {
-  const url = `/${name}/${num}/`;
-  const response = await fakeClient.get(url);
-  console.log(response.status);
-  const $ = cheerio.load(response.data);
+  const $ = await loadPage(`https://www.porngals4.com/${name}/${num}/`)
   // find all links
-  const $galleries = $(".gl1>.item");
-  const links = $galleries.map((i, el) => $(el).find("a").attr("href")).get();
+  const links = getHref($, ".gl1>.item>div.img>a");
   return links;
 }
 
 async function crawlGallery(path) {
-  const response = await fakeClient.get(path);
-  const $ = cheerio.load(response.data);
-  const title = sanitize($("h1").text());
+  const $ = await loadPage(`https://www.porngals4.com/${path}`)
+  const title = $("h1").text();
   // check if directory exists
-  if (fs.existsSync(`./pg4/${title}`)) {
-    console.log(`Gallery ${title} already exists`);
-    return;
-  }
+  if (existingFolderCheck("pg4", title)) return;
   console.log(`Crawling gallery ${title}`);
-  const $images = $(".gal>a");
-  const images = $images.map((i, el) => $(el).attr("href")).get();
+  const images = getHref($, ".gal>a");
   // download images
   for (const image of images) {
-    if (badlinks.includes(image)) {
-      continue;
-    }
-    const filename = sanitize(image.split("/").pop());
-    await download(image, `./pg4/${title}`, { filename });
+    downloadURL(image, `./pg4/${title}`);
   }
 }
 
 async function main() {
+  if (!name) {
+    console.error("Missing --name parameter");
+    process.exit(1);
+  }
   name = name.replace(" ", "-");
-  for (let i = 1; i < pages; i++) {
-    const galleryLinks = await crawlPornstar(name, i);
-    console.log(galleryLinks);
+  // get page count
+  const $ = await loadPage(`https://www.porngals4.com/${name}/`)
+  const pageCount = $("ul.paging>li>a:not(.nav_item)").length + 1;
+  for (let page = 1; page < pageCount; page++) {
+    const galleryLinks = await crawlPornstar(name, page);
     for (const gallery of galleryLinks) {
       crawlGallery(gallery);
     }

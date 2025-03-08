@@ -1,56 +1,41 @@
-import * as cheerio from "cheerio";
-import axios from "axios";
-import download from "download";
-import fs from "fs";
-import sanitize from "sanitize-filename";
+// usage:
+// node babesource.mjs --namepath angela-white-96
 
-// config
-const namepath = "alina-lopez-5360";
-const pages = 4;
+import { existingFolderCheck, getHref, loadPage, downloadURL } from "./utils.mjs";
+import minimist from 'minimist';
 
-const fakeClient = axios.create({
-  baseURL: "https://babesource.com",
-  headers: {
-    "User-Agent":
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-  },
-});
+const argv = minimist(process.argv.slice(2));
+let namepath = argv.namepath;
 
-async function crawlPornstar(num) {
-  const url = `/pornstars/${namepath}/page${num}.html`;
-  const response = await fakeClient.get(url);
-  console.log(response.status);
-  const $ = cheerio.load(response.data);
+async function crawlPornstar(namepath, num) {
+  const url = `https://babesource.com/pornstars/${namepath}/page${num}.html`;
+  const $ = await loadPage(url);
   // find all links
-  const $galleries = $(".main-content__card-link");
-  const links = $galleries.map((i, el) => $(el).attr("href")).get();
+  const links = getHref($, ".main-content__card-link");
   return links;
 }
 
 async function crawlGallery(path) {
-  const response = await fakeClient.get(path);
-  const $ = cheerio.load(response.data);
-  const title = sanitize(path.split("/").pop().split(".").shift());
-  // check if directory exists
-  if (fs.existsSync(`./bs/${title}`)) {
-    console.log(`Gallery ${title} already exists`);
-    return;
-  }
+  const $ = await loadPage(path);
+  const title = path.split("/").pop().split(".").shift();
+  if (existingFolderCheck("bs", title)) return;
   console.log(`Crawling gallery ${title}`);
-  const $images = $("a.box-massage__card-link");
-  const images = $images.map((i, el) => $(el).attr("href")).get();
+  const images = getHref($, ".box-massage__card-link");
   // download images
   for (const image of images) {
-    const filename = sanitize(image.split("/").pop());
-    const url = encodeURI(image);
-    await download(url, `./bs/${title}`, { filename });
+    downloadURL(encodeURI(image), `./bs/${title}`);
   }
 }
 
 async function main() {
-  for (let i = 1; i < pages; i++) {
-    const galleryLinks = await crawlPornstar(i);
-    console.log(galleryLinks);
+  if (!namepath) {
+    console.error("Missing --namepath parameter");
+    process.exit(1);
+  }
+  const $ = await loadPage(`https://babesource.com/pornstars/${namepath}/`);
+  const pageCount = $("div.paginations>a.paginations__link").length
+  for (let page = 1; page < pageCount; page++) {
+    const galleryLinks = await crawlPornstar(namepath, page);
     for (const gallery of galleryLinks) {
       crawlGallery(gallery);
     }
