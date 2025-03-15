@@ -6,6 +6,8 @@ A [PR (#2082)](https://github.com/stashapp/CommunityScrapers/pull/2082) was crea
 
 Brought up [here](https://discord.com/channels/559159668438728723/935611121371611157/1299977770620817419) and [discussed](https://discord.com/channels/559159668438728723/935611121371611157/1301416399964602418)
 
+Somtimes the script does not add the "Women's Heels" tag because it already exists
+
 ```
-TeamSkeet uses Pumps to refer to the shoes which conflicts with the StashDB alias. A CommunityScripts PR was merged but the remnants are being cleaned up. See https://feederbox.cc/gh/misc-projects/tree/main/ts-pumps
+TeamSkeet uses Pumps to refer to the shoes which conflicts with the StashDB alias. A CommunityScripts PR was merged but the remnants are being cleaned up. See https://u.feederbox.cc/ts-pumps for details
 ```

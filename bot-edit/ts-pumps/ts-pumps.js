@@ -1,64 +1,12 @@
-require("dotenv").config()
-const axios = require('axios')
-const URL = require('node:url').URL
-const fs = require('node:fs')
-
-const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+import 'dotenv/config'
+import fs from "fs"
+import { callGQL } from "../stashdb.js"
+import { getTSUrl, tsAPI } from "../ts-api.js"
+import { editScene } from "../stashdb.js"
 
 const resultsFile = fs.readFileSync("ts-pumps/results.json")
 const results = new Map(JSON.parse(resultsFile))
-
-const getTSUrl = (urls) =>
-  urls.find(
-    url => (url.url.includes("teamskeet.com") && !url.url.includes("members.teamskeet.com"))
-    || url.url.includes("mylf.com")
-    || url.url.includes("swappz.com"))?.url
-
-function tsAPI(tsURL) {
-  let API_BASE = ""
-  let ORIGIN = ""
-  if (tsURL.includes("teamskeet.com")) {
-    API_BASE = "https://tours-store.psmcdn.net/ts-elastic-d5cat0jl5o-videoscontent/_doc/"
-    ORIGIN = "https://www.teamskeet.com"
-  } else if (tsURL.includes("mylf.com")) {
-    API_BASE = "https://tours-store.psmcdn.net/mylf-elastic-hka5k7vyuw-videoscontent/_doc/"
-    ORIGIN = "https://www.mylf.com"
-  } else if (tsURL.includes("swappz.com")) {
-    API_BASE = "https://tours-store.psmcdn.net/swap_bundle/_search?size=1&q=id:"
-    ORIGIN = "https://www.swappz.com"
-  } else {
-    console.log("Invalid URL")
-    return
-  }
-
-  const movieID = new URL(tsURL).pathname.split("/").pop()
-
-  return axios.get(`${API_BASE}${movieID}`, {
-    headers: {
-      'User-Agent': USER_AGENT,
-      'Origin': ORIGIN,
-      "Referer": ORIGIN
-    }
-  }).then(res => {
-    const tags = res.data._source.tags
-    return tags.includes("Pumps")
-  })
-}
-
 const PROBLEMTAG = "717b2808-e2e4-4508-b981-a0da236ee541"
-
-// plugins/stashdb-api
-const callGQL = async (reqData) =>
-  fetch(`https://stashdb.org/graphql`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "ApiKey": process.env.STASHDB_API_KEY,
-    },
-    body: JSON.stringify(reqData),
-  })
-    .then((res) => res.json())
-    .then((res) => res.data);
 
 async function sdbFetch(page = 1) {
   const query = `query ($page: Int!, $tag: [ID!]) {
@@ -114,10 +62,23 @@ async function processScenes() {
   }
 }
 
+async function fixScene(sceneID) {
+  const badTag = "717b2808-e2e4-4508-b981-a0da236ee541"
+  const newTag = "cf37312c-06fc-49bd-9537-a13e84ebcf0d"
+  const comment = `TeamSkeet uses Pumps to refer to the shoes which conflicts with the StashDB alias. A CommunityScripts PR was merged but the remnants are being cleaned up. See https://u.feederbox.cc/ts-pumps for details`
+  editScene(sceneID, badTag, newTag, comment)
+}
+
 async function parseResults() {
   const results = fs.readFileSync("ts-pumps/results.json")
-  const trueResults = JSON.parse(results).filter(([_, value]) => value === true)
-  console.log(`${trueResults.length} teamskeet matches found`)
+  const trueResults = JSON.parse(results)
+    .filter(([_, value]) => value === true)
+    .map(([key, _]) => key)
+  //console.log(`${trueResults.length} teamskeet matches found`)
+  // process first result
+  const sceneID = trueResults[0]
+  console.log(`Processing scene ${sceneID}`)
+  fixScene(sceneID)
 }
 
 //processScenes()
