@@ -78,7 +78,7 @@ async function parseResults() {
   console.log(`${trueResults.length} teamskeet matches found`)
   
   const start = 0
-  const batch = trueResults.slice(start, start+20)
+  const batch = trueResults.slice(start, start+300)
   console.log(`Processing batch of ${batch.length}`)
   // process all results
   for (let i = 0; i < batch.length; i++) {
@@ -90,5 +90,5 @@ async function parseResults() {
   }
 }
 
-processScenes()
-//parseResults()
+//processScenes()
+parseResults()
