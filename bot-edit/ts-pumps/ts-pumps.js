@@ -18,6 +18,7 @@ async function sdbFetch(page = 1) {
       count
       scenes {
         urls { url }
+        title
         id
       }}}`
   const variables = {
@@ -40,12 +41,12 @@ async function processScenes() {
         //console.log(`Scene ${scene.id} already in results`)
       } else if (!tsURL) {
         // if no URLs, add to results as false
-        results.set(scene.id, false)
+        results.set(scene.id, { hasPumps: false,  title: scene.title })
       } else if (tsURL) {
         // if has URLs, check if it has pumps
         tsAPI(tsURL).then(hasPumps => {
           // if has pumps, add to results as true
-          results.set(scene.id, hasPumps)
+          results.set(scene.id, { hasPumps, title: scene.title })
         }).catch(err => {
           console.log("Error")
           console.log(scene.id)
@@ -72,14 +73,22 @@ async function fixScene(sceneID) {
 async function parseResults() {
   const results = fs.readFileSync("ts-pumps/results.json")
   const trueResults = JSON.parse(results)
-    .filter(([_, value]) => value === true)
+    .filter(([_, value]) => value.hasPumps === true)
     .map(([key, _]) => key)
-  //console.log(`${trueResults.length} teamskeet matches found`)
-  // process first result
-  const sceneID = trueResults[0]
-  console.log(`Processing scene ${sceneID}`)
-  fixScene(sceneID)
+  console.log(`${trueResults.length} teamskeet matches found`)
+  
+  const start = 0
+  const batch = trueResults.slice(start, start+20)
+  console.log(`Processing batch of ${batch.length}`)
+  // process all results
+  for (let i = 0; i < batch.length; i++) {
+    const sceneID = batch[i]
+    console.log(`Processing scene ${sceneID}`)
+    fixScene(sceneID)
+    // add delay
+    await new Promise(resolve => setTimeout(resolve, 500))
+  }
 }
 
-//processScenes()
-parseResults()
+processScenes()
+//parseResults()

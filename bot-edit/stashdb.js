@@ -14,6 +14,7 @@ const findScene = `
     studio { id }
     tags { id }
     images { id }
+    edits { status }
     performers {
       performer { id }
     }}}`
@@ -39,6 +40,12 @@ export const editScene = async (sceneID, badTag, newTag, comment) => {
     variables: { id: sceneID }
   })
   const scene = oldScene.findScene
+  // if pending edit, exit 
+  if (scene.edits.any(edit => edit.status === "PENDING")) {
+    console.log("Scene has pending edit")
+    return
+  }
+  // craft new edit request
   const tag_ids = scene.tags.map(tag => tag.id)
   const performers = scene.performers.map(performer => performer.performer.id)
   const image_ids = scene.images.map(image => image.id)
@@ -64,7 +71,6 @@ export const editScene = async (sceneID, badTag, newTag, comment) => {
   delete newScene.images
   delete newScene.studio
   // submit edit
-  console.log(newScene)
   await callGQL({
     query: `mutation ($input: SceneEditInput!) {
       sceneEdit(input: $input) {
@@ -79,10 +85,11 @@ export const editScene = async (sceneID, badTag, newTag, comment) => {
       }, details: newScene
     }}
   }).then(data => {
-    const id = data.editScene.id
+    const id = data.sceneEdit.id
     console.log(`Edit created with id: ${id}`)
   }).catch(err => {
     console.log("Error")
-    console.log(JSON.stringify(err.response.data))
+    console.log(err)
+    console.log(JSON.stringify(err?.response?.data))
   })
 }
