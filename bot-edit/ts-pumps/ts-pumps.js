@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import fs from "fs"
-import { callGQL } from "../stashdb.js"
+import { tagFetch } from "../stashdb.js"
 import { getTSUrl, tsAPI } from "../ts-api.js"
 import { editScene } from "../stashdb.js"
 
@@ -8,30 +8,9 @@ const resultsFile = fs.readFileSync("ts-pumps/results.json")
 const results = new Map(JSON.parse(resultsFile))
 const PROBLEMTAG = "717b2808-e2e4-4508-b981-a0da236ee541"
 
-async function sdbFetch(page = 1) {
-  const query = `query ($page: Int!, $tag: [ID!]) {
-    queryScenes( input: {
-      tags: { value: $tag modifier: INCLUDES }
-      per_page: 25
-      page: $page
-    }) {
-      count
-      scenes {
-        urls { url }
-        title
-        id
-      }}}`
-  const variables = {
-    page,
-    tag: PROBLEMTAG
-  }
-  const data = await callGQL({ query, variables })
-  return data
-}
-
 async function processScenes() {
   let page = 1
-  let data = await sdbFetch(page)
+  let data = await tagFetch(PROBLEMTAG, page)
   let scenes = data.queryScenes.scenes
   while (scenes.length > 0) {
     scenes.forEach(scene => {
@@ -57,7 +36,7 @@ async function processScenes() {
       }
     })
     page++
-    data = await sdbFetch(page)
+    data = await tagFetch(PROBLEMTAG, page)
     scenes = data.queryScenes.scenes
     fs.writeFileSync("ts-pumps/results.json", JSON.stringify([...results], null, 2))
   }
