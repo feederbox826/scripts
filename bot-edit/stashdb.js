@@ -19,9 +19,23 @@ const findScene = `
       performer { id }
     }}}`
 
+const getTag = `
+query ($page: Int!, $tag: [ID!]) {
+  queryScenes( input: {
+    tags: { value: $tag modifier: INCLUDES }
+    per_page: 25
+    page: $page
+  }) {
+    count
+    scenes {
+      urls { url }
+      title
+      id
+    }}}
+`
 
 // plugins/stashdb-api
-export const callGQL = async (reqData) =>
+const callGQL = async (reqData) =>
   axios({
     url: "https://stashdb.org/graphql",
     method: "POST",
@@ -32,6 +46,12 @@ export const callGQL = async (reqData) =>
     data: JSON.stringify(reqData),
   })
     .then((res) => res.data.data);
+
+
+export const tagFetch = (tag, page = 1) => callGQL({
+  query: getTag,
+  variables: { page, tag }
+})
 
 export const editScene = async (sceneID, badTag, newTag, comment) => {
   // get oldScene
