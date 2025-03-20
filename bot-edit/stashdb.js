@@ -35,7 +35,7 @@ query ($page: Int!, $tag: [ID!]) {
 `
 
 // plugins/stashdb-api
-const callGQL = async (reqData) =>
+export const callGQL = async (reqData) =>
   axios({
     url: "https://stashdb.org/graphql",
     method: "POST",
@@ -45,8 +45,31 @@ const callGQL = async (reqData) =>
     },
     data: JSON.stringify(reqData),
   })
-    .then((res) => res.data.data);
+    .then((res) => res.data.data)
+    .catch((err) => {
+      console.log("Error")
+      console.log(err)
+      console.log(JSON.stringify(err?.response?.data))
+    })
 
+export const paginatedFetch = async (reqData) => {
+  const results = []
+  let page = 1
+  // fetch first page and count
+  const firstPage = await callGQL({ ...reqData, variables: { ...reqData.variables, page } })
+  const queryName = Object.keys(firstPage)[0]
+  const dataObj = Object.keys(firstPage[queryName])[1]
+  // push first page
+  results.push(...firstPage[queryName][dataObj])
+  // get rest of pages
+  const pageCount = Math.ceil(firstPage[queryName].count / 20)
+  for (; page <= pageCount; page++) {
+    console.log("Fetching page", page)
+    const data = await callGQL({ ...reqData, variables: { ...reqData.variables, page } })
+    results.push(...data[queryName][dataObj])
+  }
+  return results
+}
 
 export const tagFetch = (tag, page = 1) => callGQL({
   query: getTag,

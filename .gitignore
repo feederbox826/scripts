@@ -2,3 +2,5 @@
 misc/my_bad_fragments/backlog.json
 misc/my_bad_fragments/fingerprints.json
 misc/my_bad_fragments/results.json
+bot-edit/amateur-site/results/*
+bot-edit/amateur-site/studios.json
