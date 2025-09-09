@@ -30,7 +30,7 @@ async function getAllStudios() {
 }
 
 const arrToFile = (filename, arr) => {
-  const newArr = arr.map(item => `https://stashdb.org/studios/${item}`)
+  const newArr = arr.map(item => item.includes("https://") ? item : `https://stashdb.org/studios/${item}`)
   fs.writeFileSync(`amateur-site/results/${filename}.json`, JSON.stringify(newArr, null, 2))
 }
 

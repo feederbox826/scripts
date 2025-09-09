@@ -8,6 +8,7 @@ export const fakeClient = axios.create({
   headers: {
     "User-Agent":
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+    "Cookie": "ageConfirmed=true",
   },
 });
 
@@ -20,6 +21,9 @@ export const existingFolderCheck = (foldername, title) => {
   }
   return false;
 }
+
+export const downloadURLFilename = async (url, folder, filename, options={}) =>
+  download(url, folder, { filename: sanitize(filename), ...options })
 
 export const downloadURL = async (url, folder) =>
   download(url, folder, { filename: sanitize(url.split("/").pop()) });

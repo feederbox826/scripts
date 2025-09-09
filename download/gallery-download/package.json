@@ -4,6 +4,7 @@
 		"cheerio": "1.0.0",
 		"download": "^8.0.0",
 		"minimist": "^1.2.8",
+		"probe-image-size": "^7.2.3",
 		"sanitize-filename": "^1.6.3"
 	}
 }
